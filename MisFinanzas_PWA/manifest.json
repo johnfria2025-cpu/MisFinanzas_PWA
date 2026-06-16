@@ -1,0 +1,16 @@
+{
+  "name": "Mis Finanzas",
+  "short_name": "Finanzas",
+  "description": "Plan financiero personal: gastos por nivel, deudas, periódicos y proyección de flujo. Tus datos viven solo en tu dispositivo.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0B1622",
+  "theme_color": "#0B1622",
+  "lang": "es-CO",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
