@@ -25,14 +25,15 @@
   }
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-  html,body{height:100%}
+  html{height:100%}
   body{
+    min-height:100%;
     font-family:var(--ff); background:
       radial-gradient(1200px 700px at 80% -10%, #15314a55, transparent 60%),
       radial-gradient(900px 600px at -10% 10%, #0d2c3f55, transparent 55%),
       var(--bg);
     color:var(--ink); -webkit-font-smoothing:antialiased;
-    padding-bottom:calc(78px + env(safe-area-inset-bottom));
+    padding-bottom:calc(80px + env(safe-area-inset-bottom) + 24px);
   }
   .wrap{max-width:760px;margin:0 auto;padding:0 16px}
   /* Header */
@@ -967,7 +968,14 @@ $$('.tabs button').forEach(b=>b.onclick=()=>{
   $$('.tabs button').forEach(x=>x.classList.remove('on'));b.classList.add('on');
   $$('.view').forEach(v=>v.classList.remove('active'));
   $('#v-'+b.dataset.v).classList.add('active');window.scrollTo(0,0);
-  if(b.dataset.v==='historial')renderHistorial();});
+  if(b.dataset.v==='historial')renderHistorial();
+  updateFabs(b.dataset.v);});
+// el + y la 🐜 solo tienen sentido en vistas donde se registran movimientos
+function updateFabs(view){
+  const ocultar=['deudas','peri','ajustes'].includes(view);
+  $('#fab').style.display=ocultar?'none':'grid';
+  $('#fabAnt').style.display=ocultar?'none':'grid';
+}
 $('#prevM').onclick=()=>{curMonth--;if(curMonth<0){curMonth=11;curYear--;}render();};
 $('#nextM').onclick=()=>{curMonth++;if(curMonth>11){curMonth=0;curYear++;}render();};
 
