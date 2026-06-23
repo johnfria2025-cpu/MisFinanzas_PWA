@@ -278,6 +278,26 @@
   .preset-row .del{flex-shrink:0;width:38px;height:42px;border:1px solid var(--line);
     background:var(--card);border-radius:11px;color:var(--bad);font-size:17px;cursor:pointer}
   .preset-row .del:active{background:#ff6b6b22}
+  /* editor de categorías */
+  .cat-row{display:flex;align-items:center;gap:11px;padding:11px;background:var(--card);
+    border:1px solid var(--line);border-radius:12px;margin-bottom:9px;cursor:pointer}
+  .cat-row .sw{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;
+    font-size:18px;flex-shrink:0}
+  .cat-row .nm{flex:1;font-size:14px;font-weight:500}
+  .cat-row .cnt{font-size:11px;color:var(--ink-faint)}
+  .cat-row .arr{color:var(--ink-faint);font-size:18px}
+  .emoji-sug{display:flex;flex-wrap:wrap;gap:6px}
+  .emoji-sug button{border:1px solid var(--line);background:var(--card);border-radius:9px;
+    font-size:18px;width:38px;height:38px;cursor:pointer;padding:0}
+  .emoji-sug button:active{border-color:var(--accent)}
+  /* metas de ahorro */
+  .meta-row{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+  .meta-row select{flex:1;min-width:0;padding:11px;font-size:13px}
+  .meta-row .pct-in{width:74px;flex-shrink:0;padding:11px;font-family:var(--ff-disp);
+    font-weight:600;text-align:center}
+  .meta-row .del{flex-shrink:0;width:38px;height:42px;border:1px solid var(--line);
+    background:var(--card);border-radius:11px;color:var(--bad);font-size:17px;cursor:pointer}
+  .meta-row .del:active{background:#ff6b6b22}
 </style>
 </head>
 <body>
@@ -314,14 +334,7 @@
       </div>
     </div>
     <div class="kpis">
-      <div class="kpi ahorro">
-        <div class="ring" id="ahorroRing"><span id="ahorroPct">0%</span></div>
-        <div class="meta">
-          <div class="k">🎯 Ahorro vs meta</div>
-          <div class="v" id="ahorroVal">$0</div>
-          <div class="sub" id="ahorroMsg">Meta: 30% del ingreso</div>
-        </div>
-      </div>
+      <div id="ahorroCards" style="grid-column:span 2;display:grid;gap:11px"></div>
       <div class="kpi">
         <div class="k">💳 Deuda total</div>
         <div class="v" id="kpiDeuda">$0</div>
@@ -443,6 +456,20 @@
         <div class="t2">Cambia nombre, emoji y monto de tus atajos de un toque</div></div><div class="arr">›</div>
       </div>
     </div>
+    <div class="eyebrow">Categorías</div>
+    <div class="card">
+      <div class="set-item" id="setCategorias" style="border:0;padding:0">
+        <div class="ic">🏷️</div><div class="mid"><div class="t1">Editar categorías</div>
+        <div class="t2">Agrega, edita o borra tus categorías de gasto e ingreso</div></div><div class="arr">›</div>
+      </div>
+    </div>
+    <div class="eyebrow">Metas de ahorro</div>
+    <div class="card">
+      <div class="set-item" id="setMetas" style="border:0;padding:0">
+        <div class="ic">🎯</div><div class="mid"><div class="t1">Configurar metas de ahorro</div>
+        <div class="t2">Elige qué categorías son ahorro y la meta % de cada una</div></div><div class="arr">›</div>
+      </div>
+    </div>
     <div class="eyebrow">Datos de ejemplo</div>
     <div class="card">
       <div class="set-item" id="setDemo" style="border:0;padding-top:0">
@@ -512,6 +539,56 @@
     <button class="btn ghost" id="presetAdd" style="margin-top:6px">+ Agregar atajo</button>
     <button class="btn" id="presetSave" style="margin-top:10px">Guardar cambios</button>
     <button class="btn ghost" id="presetReset" style="margin-top:8px">Restaurar valores por defecto</button>
+  </div>
+</div>
+
+<!-- MODAL: editor de categorías -->
+<div class="modal" id="mCats">
+  <div class="bd" data-close></div>
+  <div class="sheet">
+    <div class="grab"></div>
+    <h2>🏷️ Editar categorías</h2>
+    <div class="seg" id="catTipoTab">
+      <button class="on" data-ct="gasto">Gastos</button>
+      <button data-ct="ingreso">Ingresos</button>
+    </div>
+    <div id="catEditList"></div>
+    <button class="btn ghost" id="catAdd" style="margin-top:6px">+ Agregar categoría</button>
+    <button class="btn ghost" id="catReset" style="margin-top:8px">Restaurar categorías por defecto</button>
+  </div>
+</div>
+
+<!-- MODAL: editar/crear una categoría -->
+<div class="modal" id="mCatEdit">
+  <div class="bd" data-close></div>
+  <div class="sheet">
+    <div class="grab"></div>
+    <h2 id="catEditTitle">Nueva categoría</h2>
+    <label class="fld"><span class="lb">Nombre</span>
+      <input type="text" id="catNombre" placeholder="Ej. Gimnasio"></label>
+    <div class="row2">
+      <label class="fld"><span class="lb">Emoji</span>
+        <input type="text" id="catEmoji" maxlength="2" placeholder="🏋️" style="text-align:center;font-size:22px"></label>
+      <label class="fld"><span class="lb">Color</span>
+        <input type="color" id="catColor" value="#3DA9FC" style="height:48px;padding:4px"></label>
+    </div>
+    <div id="catEmojiSuggest" style="margin-bottom:14px"></div>
+    <button class="btn" id="catEditSave">Guardar categoría</button>
+    <button class="btn ghost" id="catEditDelete" style="margin-top:8px;display:none;color:var(--bad)">Eliminar categoría</button>
+    <p id="catEditWarn" style="font-size:12px;color:var(--warn);text-align:center;margin-top:10px;display:none"></p>
+  </div>
+</div>
+
+<!-- MODAL: metas de ahorro -->
+<div class="modal" id="mMetas">
+  <div class="bd" data-close></div>
+  <div class="sheet">
+    <div class="grab"></div>
+    <h2>🎯 Metas de ahorro</h2>
+    <p style="font-size:12px;color:var(--ink-dim);margin:-8px 0 16px">Elige qué categorías cuentan como ahorro y qué % de tu ingreso quieres apartar en cada una. Verás una tarjeta por cada meta en el inicio.</p>
+    <div id="metasList"></div>
+    <button class="btn ghost" id="metaAdd" style="margin-top:6px">+ Agregar meta de ahorro</button>
+    <button class="btn" id="metaSave" style="margin-top:10px">Guardar metas</button>
   </div>
 </div>
 
@@ -598,17 +675,43 @@ let editingDeuda=null, editingPeri=null;
 const MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const MES_C=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 const NIV={ob:'Obligatorio',ne:'Necesario',pr:'Prescindible'};
-const CATS_GASTO=['Vivienda / Arriendo','Alimentación','Transporte / Combustible','Salud / Medicina',
+// ===== CATEGORÍAS POR DEFECTO (se pueden editar/guardar en la base de datos) =====
+const CATS_GASTO_DEFAULT=['Vivienda / Arriendo','Alimentación','Transporte / Combustible','Salud / Medicina',
   'Educación','Entretenimiento / Ocio','Ropa / Calzado','Servicios públicos','Deudas / Créditos',
-  'Impuestos','Seguros','Mascotas','Viajes','Tecnología / Suscripciones','Restaurantes / Comida fuera','Gastos hormiga','Otro'];
-const CATS_ING=['Salario','Bono / Movilización','Prima','Venta de activo','Rendimientos','Otro ingreso'];
-const CAT_ICON={'Vivienda / Arriendo':'🏠','Alimentación':'🛒','Transporte / Combustible':'⛽',
+  'Impuestos','Seguros','Mascotas','Viajes','Tecnología / Suscripciones','Restaurantes / Comida fuera',
+  'Inversiones / Ahorros','Gastos hormiga','Otro'];
+const CATS_ING_DEFAULT=['Salario','Bono / Movilización','Prima','Venta de activo','Rendimientos','Otro ingreso'];
+const CAT_ICON_DEFAULT={'Vivienda / Arriendo':'🏠','Alimentación':'🛒','Transporte / Combustible':'⛽',
   'Salud / Medicina':'💊','Educación':'📚','Entretenimiento / Ocio':'🎬','Ropa / Calzado':'👕',
   'Servicios públicos':'💡','Deudas / Créditos':'💳','Impuestos':'🏛️','Seguros':'🛡️','Mascotas':'🐾',
-  'Viajes':'✈️','Tecnología / Suscripciones':'📱','Restaurantes / Comida fuera':'🍽️','Gastos hormiga':'🐜','Otro':'•',
+  'Viajes':'✈️','Tecnología / Suscripciones':'📱','Restaurantes / Comida fuera':'🍽️','Inversiones / Ahorros':'💰','Gastos hormiga':'🐜','Otro':'•',
   'Salario':'💰','Bono / Movilización':'🚌','Prima':'🎁','Venta de activo':'🏷️','Rendimientos':'📈','Otro ingreso':'➕'};
-const CAT_COLOR=['#FF6B6B','#3DA9FC','#FFC857','#37E2B0','#A78BFA','#FB923C','#F472B6','#22D3EE',
+const CAT_COLOR_DEFAULT=['#FF6B6B','#3DA9FC','#FFC857','#37E2B0','#A78BFA','#FB923C','#F472B6','#22D3EE',
   '#E879F9','#FACC15','#4ADE80','#FB7185','#60A5FA','#C084FC','#34D399','#F59E0B','#94A3B8'];
+
+// Estructura editable de categorías: cada una {nombre, emoji, color, tipo:'gasto'|'ingreso'}
+function categoriasDefault(){
+  const arr=[];
+  CATS_GASTO_DEFAULT.forEach((nombre,i)=>arr.push({nombre,emoji:CAT_ICON_DEFAULT[nombre]||'•',
+    color:CAT_COLOR_DEFAULT[i%CAT_COLOR_DEFAULT.length],tipo:'gasto'}));
+  CATS_ING_DEFAULT.forEach((nombre,i)=>arr.push({nombre,emoji:CAT_ICON_DEFAULT[nombre]||'➕',
+    color:CAT_COLOR_DEFAULT[i%CAT_COLOR_DEFAULT.length],tipo:'ingreso'}));
+  return arr;
+}
+// Estado vivo (se llena en loadState desde cfg, o con los defaults)
+let CATEGORIAS=categoriasDefault();
+// Getters que el resto de la app usa (mantienen compatibilidad con el código existente)
+let CATS_GASTO=CATS_GASTO_DEFAULT.slice();
+let CATS_ING=CATS_ING_DEFAULT.slice();
+let CAT_ICON={...CAT_ICON_DEFAULT};
+let CAT_COLOR=CAT_COLOR_DEFAULT.slice();
+// Reconstruye las variables derivadas a partir de CATEGORIAS
+function rebuildCats(){
+  CATS_GASTO=CATEGORIAS.filter(c=>c.tipo==='gasto').map(c=>c.nombre);
+  CATS_ING=CATEGORIAS.filter(c=>c.tipo==='ingreso').map(c=>c.nombre);
+  CAT_ICON={};CATEGORIAS.forEach(c=>CAT_ICON[c.nombre]=c.emoji);
+  CAT_COLOR=CATS_GASTO.map(n=>{const c=CATEGORIAS.find(x=>x.nombre===n&&x.tipo==='gasto');return c?c.color:'#94A3B8';});
+}
 // presets de gastos hormiga para registro rápido (montos típicos COP)
 const HORMIGA_DEFAULT=[
   {emoji:'☕',nombre:'Café',monto:5000},
@@ -655,6 +758,11 @@ async function loadState(){
   if(state.cfg.saldoIni==null)state.cfg.saldoIni=0;
   if(state.cfg.presets&&Array.isArray(state.cfg.presets)&&state.cfg.presets.length)
     HORMIGA_PRESETS=state.cfg.presets.map(p=>({...p}));
+  // categorías guardadas (o defaults)
+  if(state.cfg.categorias&&Array.isArray(state.cfg.categorias)&&state.cfg.categorias.length)
+    CATEGORIAS=state.cfg.categorias.map(c=>({...c}));
+  else CATEGORIAS=categoriasDefault();
+  rebuildCats();
 }
 async function saveCfg(k,v){state.cfg[k]=v;await put('cfg',{k,v});}
 
@@ -675,6 +783,14 @@ function sum(arr,f=x=>x.monto){return arr.reduce((a,b)=>a+f(b),0);}
 function ingresosMes(m,y){return sum(monthTx(m,y).filter(t=>t.tipo==='Ingreso'));}
 function gastosMes(m,y){return sum(monthTx(m,y).filter(t=>t.tipo==='Gasto'));}
 function ahorroMes(m,y){return sum(monthTx(m,y).filter(t=>t.tipo==='Gasto'&&t.cat==='Inversiones / Ahorros'));}
+// metas de ahorro configurables: lista de {cat, meta(%)}. Default: una con Inversiones/Ahorros 30%
+function metasAhorro(){
+  if(state.cfg.metasAhorro&&Array.isArray(state.cfg.metasAhorro)&&state.cfg.metasAhorro.length)
+    return state.cfg.metasAhorro;
+  return [{cat:'Inversiones / Ahorros',meta:state.cfg.meta||30}];
+}
+// cuánto se ahorró este mes en una categoría dada
+function ahorroCatMes(cat,m,y){return sum(monthTx(m,y).filter(t=>t.tipo==='Gasto'&&t.cat===cat));}
 // provisión periódicos prorrateada por mes
 function periProvisionMensual(){return state.peri.reduce((a,p)=>a+p.monto/p.frec,0);}
 // ¿este periódico ya fue pagado en este mes/año? (clave "AAAA-MM")
@@ -716,18 +832,25 @@ function renderInicio(){
   $('#heroSaldo').textContent=fmt(fm.fin);
   $('#heroSaldo').className='v '+(fm.fin>=0?'':'neg');
 
-  // ahorro
-  const aho=ahorroMes(curMonth,curYear);
-  const pct=ing>0?Math.round(aho/ing*100):0;
-  const meta=state.cfg.meta||30;
-  $('#ahorroPct').textContent=pct+'%';
-  $('#ahorroVal').textContent=fmt(aho);
-  const ring=$('#ahorroRing');ring.style.setProperty('--p',Math.min(pct,100));
-  let col=pct>=meta?'var(--good)':pct>=meta*0.66?'var(--warn)':'var(--bad)';
-  ring.style.background=`conic-gradient(${col} calc(${Math.min(pct,100)}*1%),#26405a 0)`;
-  $('#ahorroMsg').textContent=pct>=meta?`✓ Cumples tu meta del ${meta}%`:
-    pct>=meta*0.66?`Cerca: meta ${meta}%`:`⚠ Bajo la meta del ${meta}%`;
-  $('#ahorroMsg').style.color=pct>=meta?'var(--good)':pct>=meta*0.66?'var(--warn)':'var(--bad)';
+  // ahorro — una tarjeta por cada meta configurada
+  const metas=metasAhorro();
+  const cont=$('#ahorroCards');
+  cont.innerHTML=metas.map((mg,idx)=>{
+    const aho=ahorroCatMes(mg.cat,curMonth,curYear);
+    const pct=ing>0?Math.round(aho/ing*100):0;
+    const meta=mg.meta||0;
+    const cumple=pct>=meta, cerca=pct>=meta*0.66;
+    const col=cumple?'var(--good)':cerca?'var(--warn)':'var(--bad)';
+    const msg=cumple?`✓ Cumples tu meta del ${meta}%`:cerca?`Cerca: meta ${meta}%`:`⚠ Bajo la meta del ${meta}%`;
+    const emoji=CAT_ICON[mg.cat]||'🎯';
+    return `<div class="kpi ahorro">
+      <div class="ring" style="--p:${Math.min(pct,100)};background:conic-gradient(${col} calc(${Math.min(pct,100)}*1%),#26405a 0)">
+        <span>${pct}%</span></div>
+      <div class="meta">
+        <div class="k">${emoji} ${mg.cat}</div>
+        <div class="v">${fmt(aho)}</div>
+        <div class="sub" style="color:${col}">${msg}</div>
+      </div></div>`;}).join('');
 
   // deuda
   const dt=sum(state.deudas,d=>d.saldo);
@@ -1177,7 +1300,12 @@ $('#fileImport').onchange=e=>{const f=e.target.files[0];if(!f)return;
     for(const o of state.tx)await put('tx',o);
     for(const o of state.deudas)await put('deudas',o);
     for(const o of state.peri)await put('peri',o);
-    if(d.cfg){await saveCfg('meta',d.cfg.meta);await saveCfg('saldoIni',d.cfg.saldoIni);}
+    if(d.cfg){await saveCfg('meta',d.cfg.meta);await saveCfg('saldoIni',d.cfg.saldoIni);
+      if(d.cfg.presets){await saveCfg('presets',d.cfg.presets);HORMIGA_PRESETS=d.cfg.presets.map(p=>({...p}));}
+      if(d.cfg.categorias&&Array.isArray(d.cfg.categorias)&&d.cfg.categorias.length){
+        await saveCfg('categorias',d.cfg.categorias);
+        CATEGORIAS=d.cfg.categorias.map(c=>({...c}));rebuildCats();}
+      if(d.cfg.metasAhorro&&Array.isArray(d.cfg.metasAhorro))await saveCfg('metasAhorro',d.cfg.metasAhorro);}
     syncCfgInputs();render();toast('Respaldo restaurado');}
     catch(err){toast('Archivo no válido');}};r.readAsText(f);};
 $('#setExportXlsx').onclick=exportXlsx;
@@ -1216,6 +1344,119 @@ $('#presetSave').onclick=async()=>{
 $('#presetReset').onclick=async()=>{
   presetDraft=HORMIGA_DEFAULT.map(p=>({...p}));renderPresetEditor();
   toast('Valores por defecto cargados — recuerda guardar');};
+
+/* ===== EDITOR DE CATEGORÍAS ===== */
+let catTipoActual='gasto', catEditando=null;
+const EMOJIS_SUGERIDOS=['🏠','🛒','⛽','💊','📚','🎬','👕','💡','💳','🏛️','🛡️','🐾','✈️','📱','🍽️','🐜',
+  '💰','🎁','📈','🏋️','🎓','🎵','☕','🍺','🚗','🚌','🎮','💼','🏥','🎨','🌱','🔧','📦','🎉','💵','🏦','📊','✏️','🍔','🏖️'];
+function openCatEditor(){catTipoActual='gasto';$('#mCats').classList.add('open');
+  $$('#catTipoTab button').forEach(b=>b.classList.toggle('on',b.dataset.ct==='gasto'));
+  renderCatList();}
+$('#setCategorias').onclick=openCatEditor;
+$('#catTipoTab').onclick=e=>{if(!e.target.dataset.ct)return;catTipoActual=e.target.dataset.ct;
+  $$('#catTipoTab button').forEach(b=>b.classList.toggle('on',b.dataset.ct===catTipoActual));
+  renderCatList();};
+function catCuentaMovs(nombre){return state.tx.filter(t=>t.cat===nombre).length;}
+function renderCatList(){
+  const lista=CATEGORIAS.filter(c=>c.tipo===catTipoActual);
+  $('#catEditList').innerHTML=lista.map((c,i)=>{
+    const n=catCuentaMovs(c.nombre);
+    return `<div class="cat-row" data-nombre="${c.nombre.replace(/"/g,'&quot;')}">
+      <div class="sw" style="background:${c.color}33">${c.emoji}</div>
+      <div class="nm">${c.nombre}</div>
+      <div class="cnt">${n>0?n+' mov.':''}</div>
+      <div class="arr">›</div></div>`;}).join('');
+  $$('#catEditList .cat-row').forEach(row=>row.onclick=()=>openCatOne(row.dataset.nombre));
+}
+function openCatOne(nombre){
+  catEditando=nombre?CATEGORIAS.find(c=>c.nombre===nombre&&c.tipo===catTipoActual):null;
+  $('#mCatEdit').classList.add('open');
+  $('#catEditTitle').textContent=catEditando?'Editar categoría':'Nueva categoría';
+  $('#catNombre').value=catEditando?catEditando.nombre:'';
+  $('#catEmoji').value=catEditando?catEditando.emoji:'';
+  $('#catColor').value=catEditando?catEditando.color:'#3DA9FC';
+  // sugerencias de emoji
+  $('#catEmojiSuggest').innerHTML='<div class="emoji-sug">'+
+    EMOJIS_SUGERIDOS.map(e=>`<button type="button" data-e="${e}">${e}</button>`).join('')+'</div>';
+  $$('#catEmojiSuggest button').forEach(b=>b.onclick=()=>$('#catEmoji').value=b.dataset.e);
+  // borrado: bloquear si tiene movimientos
+  const movs=catEditando?catCuentaMovs(catEditando.nombre):0;
+  if(catEditando){
+    $('#catEditDelete').style.display='block';
+    if(movs>0){$('#catEditDelete').disabled=true;$('#catEditDelete').style.opacity='.4';
+      $('#catEditWarn').style.display='block';
+      $('#catEditWarn').textContent=`No se puede borrar: tiene ${movs} movimiento(s). Reasígnalos o edítalos primero.`;}
+    else{$('#catEditDelete').disabled=false;$('#catEditDelete').style.opacity='1';
+      $('#catEditWarn').style.display='none';}
+  }else{$('#catEditDelete').style.display='none';$('#catEditWarn').style.display='none';}
+}
+$('#catEditSave').onclick=async()=>{
+  const nombre=$('#catNombre').value.trim();
+  if(!nombre){toast('Ponle un nombre');return;}
+  const emoji=$('#catEmoji').value.trim()||'•';
+  const color=$('#catColor').value;
+  // evitar nombre duplicado en el mismo tipo (salvo que sea el que edito)
+  const dup=CATEGORIAS.find(c=>c.tipo===catTipoActual&&c.nombre===nombre&&c!==catEditando);
+  if(dup){toast('Ya existe una categoría con ese nombre');return;}
+  if(catEditando){
+    const viejoNombre=catEditando.nombre;
+    catEditando.nombre=nombre;catEditando.emoji=emoji;catEditando.color=color;
+    // si cambió el nombre, actualizar los movimientos que la usaban
+    if(viejoNombre!==nombre){
+      for(const t of state.tx){if(t.cat===viejoNombre){t.cat=nombre;await put('tx',t);}}
+      for(const p of state.peri){if(p.cat===viejoNombre){p.cat=nombre;await put('peri',p);}}
+    }
+  }else{
+    CATEGORIAS.push({nombre,emoji,color,tipo:catTipoActual});
+  }
+  rebuildCats();await saveCfg('categorias',CATEGORIAS);
+  closeModals();render();renderCatList();$('#mCats').classList.add('open');
+  toast(catEditando?'Categoría actualizada':'Categoría agregada');};
+$('#catEditDelete').onclick=async()=>{
+  if(!catEditando)return;
+  if(catCuentaMovs(catEditando.nombre)>0){toast('No se puede borrar: tiene movimientos');return;}
+  if(!confirm(`¿Borrar la categoría "${catEditando.nombre}"?`))return;
+  CATEGORIAS=CATEGORIAS.filter(c=>c!==catEditando);
+  rebuildCats();await saveCfg('categorias',CATEGORIAS);
+  closeModals();render();renderCatList();$('#mCats').classList.add('open');
+  toast('Categoría borrada');};
+$('#catAdd').onclick=()=>openCatOne(null);
+$('#catReset').onclick=async()=>{
+  if(!confirm('¿Restaurar las categorías por defecto? Las que agregaste se perderán (los movimientos no se borran).'))return;
+  CATEGORIAS=categoriasDefault();rebuildCats();await saveCfg('categorias',CATEGORIAS);
+  render();renderCatList();toast('Categorías restauradas');};
+
+/* ===== EDITOR DE METAS DE AHORRO ===== */
+let metasDraft=[];
+function openMetasEditor(){
+  metasDraft=metasAhorro().map(m=>({...m}));
+  $('#mMetas').classList.add('open');renderMetasEditor();}
+$('#setMetas').onclick=openMetasEditor;
+function renderMetasEditor(){
+  const gastos=CATEGORIAS.filter(c=>c.tipo==='gasto').map(c=>c.nombre);
+  $('#metasList').innerHTML=metasDraft.map((m,i)=>`
+    <div class="meta-row">
+      <select data-i="${i}" class="meta-cat">
+        ${gastos.map(g=>`<option ${g===m.cat?'selected':''}>${g}</option>`).join('')}
+      </select>
+      <input type="number" class="pct-in" data-i="${i}" value="${m.meta}" min="0" max="100" placeholder="%">
+      <button class="del" data-i="${i}">✕</button>
+    </div>`).join('')||'<p style="color:var(--ink-faint);font-size:13px;text-align:center;padding:10px">Sin metas. Agrega una.</p>';
+  $$('#metasList .meta-cat').forEach(s=>s.onchange=e=>metasDraft[+e.target.dataset.i].cat=e.target.value);
+  $$('#metasList .pct-in').forEach(inp=>inp.oninput=e=>metasDraft[+e.target.dataset.i].meta=Number(e.target.value)||0);
+  $$('#metasList .del').forEach(b=>b.onclick=()=>{metasDraft.splice(+b.dataset.i,1);renderMetasEditor();});
+}
+$('#metaAdd').onclick=()=>{
+  const gastos=CATEGORIAS.filter(c=>c.tipo==='gasto').map(c=>c.nombre);
+  metasDraft.push({cat:gastos[0]||'Otro',meta:10});renderMetasEditor();};
+$('#metaSave').onclick=async()=>{
+  // validar que no haya categorías repetidas
+  const cats=metasDraft.map(m=>m.cat);
+  if(new Set(cats).size!==cats.length){toast('Hay categorías repetidas');return;}
+  await saveCfg('metasAhorro',metasDraft);
+  closeModals();render();toast('Metas de ahorro guardadas');};
+
+
 
 $('#setWipe').onclick=async()=>{if(!confirm('¿Borrar TODOS los datos? Esto no se puede deshacer.'))return;
   await clearStore('tx');await clearStore('deudas');await clearStore('peri');
