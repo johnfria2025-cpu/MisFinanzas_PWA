@@ -448,10 +448,8 @@
     <div class="card">
       <label class="fld"><span class="lb">Meta de ahorro (% del ingreso)</span>
         <input type="number" id="cfgMeta" min="0" max="100" step="1"></label>
-      <label class="fld"><span class="lb">Saldo inicial de enero</span>
+      <label class="fld" style="margin-bottom:0"><span class="lb">Saldo inicial de enero</span>
         <input type="text" inputmode="numeric" id="cfgSaldoIni" class="ff"></label>
-      <label class="fld" style="margin-bottom:0"><span class="lb">TRM (pesos por dólar) — para mostrar equivalente en USD</span>
-        <input type="text" inputmode="numeric" id="cfgTRM" class="ff" placeholder="$4.000"></label>
     </div>
     <div class="eyebrow">Gastos rápidos (hormiga)</div>
     <div class="card">
@@ -517,6 +515,12 @@
       <input type="text" id="txDesc" placeholder="Ej. Mercado Éxito"></label>
     <label class="fld"><span class="lb">Categoría</span>
       <select id="txCat"></select></label>
+    <div id="txTrmWrap" style="display:none">
+      <label class="fld"><span class="lb">TRM de esta compra (pesos por dólar)</span>
+        <input type="text" inputmode="numeric" id="txTrm" class="ff" placeholder="$4.000"></label>
+      <div id="txUsdPreview" style="font-family:var(--ff-disp);font-size:13px;color:var(--accent2);
+        margin:-8px 0 14px;text-align:center"></div>
+    </div>
     <div id="txNivelWrap">
       <span class="lb" style="font-size:12px;font-weight:600;color:var(--ink-dim);display:block;margin-bottom:7px">Nivel del gasto</span>
       <div class="niv-pick" id="txNivel">
@@ -793,8 +797,13 @@ function metasAhorro(){
     return state.cfg.metasAhorro;
   return [{cat:'Inversiones / Ahorros',meta:state.cfg.meta||30}];
 }
-// cuánto se ahorró este mes en una categoría dada
+// cuánto se ahorró este mes en una categoría dada (en COP)
 function ahorroCatMes(cat,m,y){return sum(monthTx(m,y).filter(t=>t.tipo==='Gasto'&&t.cat===cat));}
+// ¿esta categoría está marcada como "de dólares"? (alguna meta con usd:true)
+function esCatDolar(cat){return metasAhorro().some(mg=>mg.cat===cat&&mg.usd);}
+// suma de USD reales del mes en una categoría: cada movimiento aporta (monto / su trm)
+function usdCatMes(cat,m,y){return monthTx(m,y).filter(t=>t.tipo==='Gasto'&&t.cat===cat)
+  .reduce((a,t)=>a+(t.trm>0?t.monto/t.trm:0),0);}
 // provisión periódicos prorrateada por mes
 function periProvisionMensual(){return state.peri.reduce((a,p)=>a+p.monto/p.frec,0);}
 // ¿este periódico ya fue pagado en este mes/año? (clave "AAAA-MM")
@@ -847,13 +856,15 @@ function renderInicio(){
     const col=cumple?'var(--good)':cerca?'var(--warn)':'var(--bad)';
     const msg=cumple?`✓ Cumples tu meta del ${meta}%`:cerca?`Cerca: meta ${meta}%`:`⚠ Bajo la meta del ${meta}%`;
     const emoji=CAT_ICON[mg.cat]||'🎯';
-    // equivalente en USD (solo si la meta lo pide y hay TRM)
+    // equivalente en USD (solo si la meta lo pide): suma de USD reales por compra
     let usdLine='';
-    if(mg.usd&&state.cfg.trm>0){
-      const usd=aho/state.cfg.trm;
-      usdLine=`<div style="font-family:var(--ff-disp);font-size:13px;color:var(--accent2);margin-top:2px">≈ US$ ${usd.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>`;
-    }else if(mg.usd&&!(state.cfg.trm>0)){
-      usdLine=`<div style="font-size:11px;color:var(--ink-faint);margin-top:2px">Configura la TRM en Ajustes para ver USD</div>`;
+    if(mg.usd){
+      const usd=usdCatMes(mg.cat,curMonth,curYear);
+      if(usd>0){
+        usdLine=`<div style="font-family:var(--ff-disp);font-size:13px;color:var(--accent2);margin-top:2px">US$ ${usd.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>`;
+      }else if(aho>0){
+        usdLine=`<div style="font-size:11px;color:var(--ink-faint);margin-top:2px">Registra la TRM en cada compra para ver USD</div>`;
+      }
     }
     return `<div class="kpi ahorro">
       <div class="ring" style="--p:${Math.min(pct,100)};background:conic-gradient(${col} calc(${Math.min(pct,100)}*1%),#26405a 0)">
@@ -1169,6 +1180,21 @@ function setTipo(t){txTipo=t;
   fillSelect($('#txCat'),txTipo==='Ingreso'?CATS_ING:CATS_GASTO);}
 function setNivel(n){txNivel=n;
   $$('#txNivel button').forEach(b=>b.classList.toggle('on',b.dataset.n===txNivel));}
+// muestra/oculta el campo TRM según la categoría y actualiza el preview USD
+function actualizarTrmCampo(){
+  const cat=$('#txCat').value;
+  const esDolar=txTipo==='Gasto'&&esCatDolar(cat);
+  $('#txTrmWrap').style.display=esDolar?'block':'none';
+  actualizarUsdPreview();
+}
+function actualizarUsdPreview(){
+  const monto=parseNum($('#txMonto').value);
+  const trm=parseNum($('#txTrm').value);
+  if(monto>0&&trm>0){
+    const usd=monto/trm;
+    $('#txUsdPreview').textContent='≈ US$ '+usd.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  }else $('#txUsdPreview').textContent='';
+}
 function openTx(id){editingTx=id||null;$('#mTx').classList.add('open');
   const t=id?state.tx.find(x=>x.id===id):null;
   $('#txTitle').textContent=t?'Editar movimiento':'Nuevo movimiento';
@@ -1180,11 +1206,13 @@ function openTx(id){editingTx=id||null;$('#mTx').classList.add('open');
     $('#txCat').value=t.cat;
     setNivel(t.nivel||'ob');
     $('#txFecha').value=t.fecha;
+    $('#txTrm').value=t.trm?'$'+t.trm.toLocaleString('es-CO'):'';
   }else{
     $('#txFecha').valueAsDate=new Date(curYear,curMonth,Math.min(new Date().getDate(),28));
-    $('#txMonto').value='';$('#txDesc').value='';setNivel('ob');
+    $('#txMonto').value='';$('#txDesc').value='';setNivel('ob');$('#txTrm').value='';
     setTimeout(()=>$('#txMonto').focus(),100);
-  }}
+  }
+  actualizarTrmCampo();}
 $('#fab').onclick=()=>openTx(null);
 
 /* ===== REGISTRO RÁPIDO GASTO HORMIGA ===== */
@@ -1235,15 +1263,20 @@ function renderAntGrid(){
 }
 $('#antCustom').onclick=()=>{closeModals();openTx(null);
   setTimeout(()=>{$('#txCat').value='Gastos hormiga';setNivel('pr');
-    $('#txDesc').value='';$('#txDesc').focus();},120);};
-$('#txTipo').onclick=e=>{if(!e.target.dataset.t)return;setTipo(e.target.dataset.t);};
+    actualizarTrmCampo();$('#txDesc').value='';$('#txDesc').focus();},120);};
+$('#txTipo').onclick=e=>{if(!e.target.dataset.t)return;setTipo(e.target.dataset.t);actualizarTrmCampo();};
 $('#txNivel').onclick=e=>{if(!e.target.dataset.n)return;setNivel(e.target.dataset.n);};
-$('#txMonto').oninput=e=>{const n=parseNum(e.target.value);e.target.value=n?'$'+n.toLocaleString('es-CO'):'';};
+$('#txCat').onchange=()=>actualizarTrmCampo();
+$('#txMonto').oninput=e=>{const n=parseNum(e.target.value);e.target.value=n?'$'+n.toLocaleString('es-CO'):'';actualizarUsdPreview();};
+$('#txTrm').oninput=e=>{const n=parseNum(e.target.value);e.target.value=n?'$'+n.toLocaleString('es-CO'):'';actualizarUsdPreview();};
 $('#txSave').onclick=async()=>{
   const monto=parseNum($('#txMonto').value);
   if(!monto){toast('Ingresa un monto');return;}
+  const cat=$('#txCat').value;
   const o={id:editingTx||uid(),tipo:txTipo,monto,desc:$('#txDesc').value.trim(),
-    cat:$('#txCat').value,nivel:txTipo==='Gasto'?txNivel:null,fecha:$('#txFecha').value};
+    cat,nivel:txTipo==='Gasto'?txNivel:null,fecha:$('#txFecha').value};
+  // si es categoría de dólares, guardar la TRM de esta compra
+  if(txTipo==='Gasto'&&esCatDolar(cat)){const trm=parseNum($('#txTrm').value);if(trm>0)o.trm=trm;}
   if(editingTx){const i=state.tx.findIndex(x=>x.id===editingTx);if(i>=0)state.tx[i]=o;}
   else state.tx.push(o);
   await put('tx',o);closeModals();render();toast(editingTx?'Movimiento actualizado':'Movimiento guardado');};
@@ -1302,8 +1335,6 @@ $$('[data-close]').forEach(b=>b.onclick=closeModals);
 $('#cfgMeta').oninput=e=>saveCfg('meta',Number(e.target.value)||0).then(render);
 $('#cfgSaldoIni').oninput=e=>{const n=parseNum(e.target.value);
   e.target.value=n?'$'+n.toLocaleString('es-CO'):'';saveCfg('saldoIni',n).then(render);};
-$('#cfgTRM').oninput=e=>{const n=parseNum(e.target.value);
-  e.target.value=n?'$'+n.toLocaleString('es-CO'):'';saveCfg('trm',n).then(render);};
 $('#setExportJson').onclick=()=>{
   const blob=new Blob([JSON.stringify({...state,exportedAt:new Date().toISOString()},null,2)],{type:'application/json'});
   dl(blob,'respaldo-finanzas-'+new Date().toISOString().slice(0,10)+'.json');toast('Respaldo descargado');};
@@ -1502,8 +1533,7 @@ function exportXlsx(){
   XLSX.writeFile(wb,'finanzas-'+curYear+'.xlsx');toast('Excel descargado');}
 
 function syncCfgInputs(){$('#cfgMeta').value=state.cfg.meta;
-  $('#cfgSaldoIni').value=state.cfg.saldoIni?'$'+state.cfg.saldoIni.toLocaleString('es-CO'):'';
-  $('#cfgTRM').value=state.cfg.trm?'$'+state.cfg.trm.toLocaleString('es-CO'):'';}
+  $('#cfgSaldoIni').value=state.cfg.saldoIni?'$'+state.cfg.saldoIni.toLocaleString('es-CO'):'';}
 
 /* ============ DEMO ============ */
 async function loadDemo(){
