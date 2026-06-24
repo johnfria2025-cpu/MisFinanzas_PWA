@@ -298,6 +298,8 @@
   .meta-row .del{flex-shrink:0;width:38px;height:42px;border:1px solid var(--line);
     background:var(--card);border-radius:11px;color:var(--bad);font-size:17px;cursor:pointer}
   .meta-row .del:active{background:#ff6b6b22}
+  .meta-usd{display:flex;align-items:center;gap:8px;margin:-4px 0 14px;font-size:12px;color:var(--ink-dim);cursor:pointer}
+  .meta-usd input{width:auto;flex-shrink:0}
 </style>
 </head>
 <body>
@@ -446,8 +448,10 @@
     <div class="card">
       <label class="fld"><span class="lb">Meta de ahorro (% del ingreso)</span>
         <input type="number" id="cfgMeta" min="0" max="100" step="1"></label>
-      <label class="fld" style="margin-bottom:0"><span class="lb">Saldo inicial de enero</span>
+      <label class="fld"><span class="lb">Saldo inicial de enero</span>
         <input type="text" inputmode="numeric" id="cfgSaldoIni" class="ff"></label>
+      <label class="fld" style="margin-bottom:0"><span class="lb">TRM (pesos por dólar) — para mostrar equivalente en USD</span>
+        <input type="text" inputmode="numeric" id="cfgTRM" class="ff" placeholder="$4.000"></label>
     </div>
     <div class="eyebrow">Gastos rápidos (hormiga)</div>
     <div class="card">
@@ -843,12 +847,21 @@ function renderInicio(){
     const col=cumple?'var(--good)':cerca?'var(--warn)':'var(--bad)';
     const msg=cumple?`✓ Cumples tu meta del ${meta}%`:cerca?`Cerca: meta ${meta}%`:`⚠ Bajo la meta del ${meta}%`;
     const emoji=CAT_ICON[mg.cat]||'🎯';
+    // equivalente en USD (solo si la meta lo pide y hay TRM)
+    let usdLine='';
+    if(mg.usd&&state.cfg.trm>0){
+      const usd=aho/state.cfg.trm;
+      usdLine=`<div style="font-family:var(--ff-disp);font-size:13px;color:var(--accent2);margin-top:2px">≈ US$ ${usd.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>`;
+    }else if(mg.usd&&!(state.cfg.trm>0)){
+      usdLine=`<div style="font-size:11px;color:var(--ink-faint);margin-top:2px">Configura la TRM en Ajustes para ver USD</div>`;
+    }
     return `<div class="kpi ahorro">
       <div class="ring" style="--p:${Math.min(pct,100)};background:conic-gradient(${col} calc(${Math.min(pct,100)}*1%),#26405a 0)">
         <span>${pct}%</span></div>
       <div class="meta">
         <div class="k">${emoji} ${mg.cat}</div>
         <div class="v">${fmt(aho)}</div>
+        ${usdLine}
         <div class="sub" style="color:${col}">${msg}</div>
       </div></div>`;}).join('');
 
@@ -1289,6 +1302,8 @@ $$('[data-close]').forEach(b=>b.onclick=closeModals);
 $('#cfgMeta').oninput=e=>saveCfg('meta',Number(e.target.value)||0).then(render);
 $('#cfgSaldoIni').oninput=e=>{const n=parseNum(e.target.value);
   e.target.value=n?'$'+n.toLocaleString('es-CO'):'';saveCfg('saldoIni',n).then(render);};
+$('#cfgTRM').oninput=e=>{const n=parseNum(e.target.value);
+  e.target.value=n?'$'+n.toLocaleString('es-CO'):'';saveCfg('trm',n).then(render);};
 $('#setExportJson').onclick=()=>{
   const blob=new Blob([JSON.stringify({...state,exportedAt:new Date().toISOString()},null,2)],{type:'application/json'});
   dl(blob,'respaldo-finanzas-'+new Date().toISOString().slice(0,10)+'.json');toast('Respaldo descargado');};
@@ -1441,9 +1456,13 @@ function renderMetasEditor(){
       </select>
       <input type="number" class="pct-in" data-i="${i}" value="${m.meta}" min="0" max="100" placeholder="%">
       <button class="del" data-i="${i}">✕</button>
-    </div>`).join('')||'<p style="color:var(--ink-faint);font-size:13px;text-align:center;padding:10px">Sin metas. Agrega una.</p>';
+    </div>
+    <label class="meta-usd"><input type="checkbox" data-i="${i}" class="usd-chk" ${m.usd?'checked':''}>
+      <span>Mostrar equivalente en USD (usa la TRM de Ajustes)</span></label>`).join('')||
+    '<p style="color:var(--ink-faint);font-size:13px;text-align:center;padding:10px">Sin metas. Agrega una.</p>';
   $$('#metasList .meta-cat').forEach(s=>s.onchange=e=>metasDraft[+e.target.dataset.i].cat=e.target.value);
   $$('#metasList .pct-in').forEach(inp=>inp.oninput=e=>metasDraft[+e.target.dataset.i].meta=Number(e.target.value)||0);
+  $$('#metasList .usd-chk').forEach(chk=>chk.onchange=e=>metasDraft[+e.target.dataset.i].usd=e.target.checked);
   $$('#metasList .del').forEach(b=>b.onclick=()=>{metasDraft.splice(+b.dataset.i,1);renderMetasEditor();});
 }
 $('#metaAdd').onclick=()=>{
@@ -1483,7 +1502,8 @@ function exportXlsx(){
   XLSX.writeFile(wb,'finanzas-'+curYear+'.xlsx');toast('Excel descargado');}
 
 function syncCfgInputs(){$('#cfgMeta').value=state.cfg.meta;
-  $('#cfgSaldoIni').value=state.cfg.saldoIni?'$'+state.cfg.saldoIni.toLocaleString('es-CO'):'';}
+  $('#cfgSaldoIni').value=state.cfg.saldoIni?'$'+state.cfg.saldoIni.toLocaleString('es-CO'):'';
+  $('#cfgTRM').value=state.cfg.trm?'$'+state.cfg.trm.toLocaleString('es-CO'):'';}
 
 /* ============ DEMO ============ */
 async function loadDemo(){
